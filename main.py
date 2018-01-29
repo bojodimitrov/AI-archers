@@ -1,103 +1,24 @@
-from tkinter import *
-from PIL import ImageTk, Image
-import math
-
-def vector_magnitute(vector):
-    vector_sum = 0
-    for value in vector:
-        vector_sum += value ** 2
-    return math.sqrt(vector_sum)
-
-def normalise(vector):
-    magnitude = vector_magnitute(vector)
-    normalised = []
-    for value in vector:
-        normalised.append(value / magnitude)
-    return normalised
-    
-
-class Player:
-    """
-    Archer
-    """
-    def __init__(self, location):
-        self.arrow_delta = [0, 0]
-        self.gravity = [0, 0.1]
-        self.shooted = False
-        self.player_x = location[0]
-        self.player_y = location[1]
-        self.size = 4
-        self.arrow_canvas = {}
-        self.load_sprites()
-
-    def load_sprites(self):
-        """
-        Loads resources
-        """
-        bow_img = Image.open("resources/fiery_bow.png")
-        bow_img = bow_img.resize((20, 30), Image.ANTIALIAS)
-        self.bow = ImageTk.PhotoImage(bow_img)
-
-        self.arrow_img = Image.open("resources/arrow.png")
-        self.arrow_img = self.arrow_img.rotate(-90)
-        self.arrow_img = self.arrow_img.resize((70, 70), Image.ANTIALIAS)
-        self.arrow = ImageTk.PhotoImage(self.arrow_img)
-
-    def draw(self, canvas):
-        """
-        Player draws itself
-        """
-        canvas.create_oval(self.player_x - self.size * 1.5, self.player_y - self.size * 1.5,
-                           self.player_x + self.size * 1.5, self.player_y + self.size * 1.5, fill="black")
-        #platform
-        canvas.create_line(self.player_x-30, self.player_y+45, self.player_x+30, self.player_y+45, fill="black", width=self.size)
-        #body
-        canvas.create_line(self.player_x, self.player_y, self.player_x, self.player_y + 25, fill="black", width=self.size)
-        #right arm
-        canvas.create_line(self.player_x, self.player_y+10, self.player_x+18, self.player_y+10,
-                           fill="black", width=self.size)
-        #left arm
-        canvas.create_line(self.player_x, self.player_y+8, self.player_x-10, self.player_y+25,
-                           fill="black", width=self.size)
-        #right leg
-        canvas.create_line(self.player_x, self.player_y+25, self.player_x+10, self.player_y+45,
-                           fill="black", width=self.size)
-        #right leg
-        canvas.create_line(self.player_x, self.player_y+25, self.player_x-10, self.player_y+45,
-                           fill="black", width=self.size)
-        canvas.create_image(self.player_x+15, self.player_y+8, image=self.bow)
-
-        canvas.create_image(self.player_x+25, self.player_y+8, image=self.arrow)
-
-    def shoot(self, canvas, towards, power):
-        """
-        Shoots arrow in direction of 'towards' (x, y) point with some power
-        """
-        if not self.shooted:
-            direction = [towards[0] - self.player_x, towards[1] - self.player_y]
-            normalised_direction = normalise(direction)
-            self.arrow_delta[0] = normalised_direction[0] * power
-            self.arrow_delta[1] = normalised_direction[1] * power
-            self.shooted = True
-        self.arrow_delta[0] += self.gravity[0]
-        self.arrow_delta[1] += self.gravity[1]
-
-        self.arrow_img = self.arrow_img.rotate(-math.atan2(self.arrow_delta[0], self.arrow_delta[1]))
-        self.arrow = ImageTk.PhotoImage(self.arrow_img)
-        canvas.create_image(self.player_x+25, self.player_y+8, image=self.arrow)
-        
-        #canvas.move(self.arrow_canvas, self.arrow_delta[0], self.arrow_delta[1])
-        canvas.update()
+"""
+Main
+"""
+import random
+import tkinter as tk
+import player
+import neural_networks as nn
 
 class Game:
     """
     Game
     """
     def __init__(self):
-        self.master = Tk()
-        self.main_player = Player((100, 500))
-        self.canvas = Canvas(self.master, width=800, height=600)
-
+        self.master = tk.Tk()
+        self.hits = []
+        self.target_location = [700, 300]
+        self.players = [player.Player((100, 500)),
+                        player.Player((100, 200)),
+                        player.Player((100, 400))]
+        self.target = player.Target(self.target_location)
+        self.canvas = tk.Canvas(self.master, width=800, height=600)
 
     def init_canvas(self):
         """
@@ -109,19 +30,72 @@ class Game:
         """
         Starts animating
         """
-        
-        self.main_player.draw(self.canvas)
+        for pl in self.players:
+            pl.draw(self.canvas)
+        self.target.draw(self.canvas)
         self.shoot()
-        mainloop()
+        tk.mainloop()
 
     def shoot(self):
         """
         Takes care of shooting animation
         """
-        self.main_player.shoot(self.canvas, [500, 200], 7)
-        self.master.after(16, self.shoot)
+        for pl in self.players:
+            if not pl.arrow_stopped:
+                pl.shoot(self.canvas, [700 - pl.player_x, 140-pl.player_y], 15)
+        self.detect_hit()
+        self.master.after(4, self.shoot)
+
+    def detect_hit(self):
+        """
+        Detects if any arrow has hit the target
+        """
+        for pl in self.players:
+            if not pl.arrow_stopped:
+                arrow_coords = pl.get_arrow_coordinates()
+                if self.hit(arrow_coords):
+                    self.hits.append(self.canvas.create_text(
+                        self.target_location[0] + random.randint(-40, 40),
+                        self.target_location[1] + random.randint(-60, -10),
+                        text="HIT!"))
+                    self.master.after(2000, self.remove_hit_announce)
+                    pl.stop_arrow()
+                if self.headshot(arrow_coords):
+                    self.hits.append(self.canvas.create_text(
+                        self.target_location[0] + random.randint(-40, 40),
+                        self.target_location[1] + random.randint(-60, -10),
+                        text="HEADSHOT!"))
+                    pl.stop_arrow()
 
 
-GAME = Game()
-GAME.init_canvas()
-GAME.start()
+    def hit(self, arrow_coords):
+        """
+        Boolean check if arrow hits the target
+        """
+        return (arrow_coords[0] < self.target_location[0] + 20
+                and arrow_coords[0] > self.target_location[0] - 8
+                and arrow_coords[1] < self.target_location[1] + 50
+                and arrow_coords[1] > self.target_location[1] + 10)
+
+    def headshot(self, arrow_coords):
+        """
+        Boolean check if arrow headshots the target
+        """
+        return (arrow_coords[0] < self.target_location[0] + 20
+                and arrow_coords[0] > self.target_location[0] - 6
+                and arrow_coords[1] < self.target_location[1] + 10
+                and arrow_coords[1] > self.target_location[1] - 2)
+
+    def remove_hit_announce(self):
+        """
+        Removes Hit! text
+        """
+        for text_id in self.hits:
+            self.canvas.delete(text_id)
+
+#GAME = Game()
+#GAME.init_canvas()
+#GAME.start()
+NN = nn.neural_net.NeuralNetwork([2, 3, 3], 1)
+result = NN.feed_forward([500, 200], nn.f.ReLU)
+print(result)
