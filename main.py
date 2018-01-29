@@ -5,6 +5,7 @@ import random
 import tkinter as tk
 import player
 import neural_networks as nn
+import genetic_algorithm as ga
 
 class Game:
     """
@@ -12,13 +13,17 @@ class Game:
     """
     def __init__(self):
         self.master = tk.Tk()
+        self.dimensions = [800, 600]
         self.hits = []
         self.target_location = [700, 300]
-        self.players = [player.Player((100, 500)),
+        self.players = [player.Player((100, 100)),
                         player.Player((100, 200)),
-                        player.Player((100, 400))]
+                        player.Player((100, 300)),
+                        player.Player((100, 400)),
+                        player.Player((100, 500))]
         self.target = player.Target(self.target_location)
-        self.canvas = tk.Canvas(self.master, width=800, height=600)
+        self.canvas = tk.Canvas(self.master, width=self.dimensions[0], height=self.dimensions[1])
+        self.genetic_evolver = ga.GeneticAlgorithm(self.players)
 
     def init_canvas(self):
         """
@@ -40,11 +45,22 @@ class Game:
         """
         Takes care of shooting animation
         """
-        for pl in self.players:
+        results = self.genetic_evolver.get_results(self.target_location)
+        print(results)
+        for i, pl in enumerate(self.players):
             if not pl.arrow_stopped:
-                pl.shoot(self.canvas, [700 - pl.player_x, 140-pl.player_y], 15)
+                pl.shoot(self.canvas, [results[i][0], results[i][1]], results[i][2])
         self.detect_hit()
+        self.reset()
         self.master.after(4, self.shoot)
+
+    def reset(self):
+        """
+        Resets all player's arrows
+        """
+        if not [plr for plr in self.players if not plr.arrow_stopped]:
+            for plr in self.players:
+                plr.reset()
 
     def detect_hit(self):
         """
@@ -53,6 +69,8 @@ class Game:
         for pl in self.players:
             if not pl.arrow_stopped:
                 arrow_coords = pl.get_arrow_coordinates()
+                if self.is_out_of_field(arrow_coords):
+                    pl.stop_arrow()
                 if self.hit(arrow_coords):
                     self.hits.append(self.canvas.create_text(
                         self.target_location[0] + random.randint(-40, 40),
@@ -67,6 +85,14 @@ class Game:
                         text="HEADSHOT!"))
                     pl.stop_arrow()
 
+    def is_out_of_field(self, arrow_coords):
+        """
+        Boolean check if arrow is out of the field
+        """
+        return (arrow_coords[0] < 0
+                or arrow_coords[0] > self.dimensions[0]
+                or arrow_coords[1] < 0
+                or arrow_coords[1] > self.dimensions[1])
 
     def hit(self, arrow_coords):
         """
@@ -93,9 +119,6 @@ class Game:
         for text_id in self.hits:
             self.canvas.delete(text_id)
 
-#GAME = Game()
-#GAME.init_canvas()
-#GAME.start()
-NN = nn.neural_net.NeuralNetwork([2, 3, 3], 1)
-result = NN.feed_forward([500, 200], nn.f.ReLU)
-print(result)
+GAME = Game()
+GAME.init_canvas()
+GAME.start()

@@ -36,6 +36,15 @@ class Player:
         arrow_img = arrow_img.rotate(-90)
         self.arrow_img = arrow_img.resize((70, 70), Image.ANTIALIAS)
 
+    def reset(self):
+        """
+        Resets arrow
+        """
+        self.arrow_x = self.player_x+25
+        self.arrow_y = self.player_y+8
+        self.arrow_stopped = False
+        self.shooted = False
+
     def stop_arrow(self):
         """
         Stops arrow

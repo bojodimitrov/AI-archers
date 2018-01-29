@@ -13,7 +13,7 @@ class GeneticAlgorithm:
         self.population = list(population)
         self.neural_networks = []
         for _ in range(0, self.population_count):
-            self.neural_networks.append(nn.neural_network.NeuralNetwork([2, 3, 3]))
+            self.neural_networks.append(nn.neural_network.NeuralNetwork([2, 4, 3]))
 
     def get_results(self, target):
         """
@@ -25,3 +25,4 @@ class GeneticAlgorithm:
                 [target[0]-self.population[i].player_x,
                  target[1]-self.population[i].player_y],
                 nn.f.ReLU))
+        return results

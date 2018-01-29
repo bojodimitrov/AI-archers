@@ -39,4 +39,4 @@ def ReLU(x):
     """
     Rectifier
     """
-    return 0.5 * x * (x > 0)
+    return 0.1 * x * (x > 0)
