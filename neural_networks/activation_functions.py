@@ -35,8 +35,17 @@ def hyperbolic_tangent_derivative(value):
     """
     return 1.0 - math.tanh(value) ** 2
 
-def ReLU(x):
+def ReLU(value):
     """
-    Rectifier
+    Rectified linear unit
     """
-    return 0.1 * x * (x > 0)
+    return 0.1 * value * (value > 0)
+
+def PReLU(value):
+    """
+    Parametric rectifier
+    """
+    if value < 0:
+        return 0.1 * value
+    else:
+        return 0.2 * value

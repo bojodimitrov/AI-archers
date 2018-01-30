@@ -16,11 +16,16 @@ class Game:
         self.dimensions = [800, 600]
         self.hits = []
         self.target_location = [700, 300]
-        self.players = [player.Player((100, 100)),
-                        player.Player((100, 200)),
+        self.y_positions = [60, 120, 180, 240, 300, 360, 420, 480, 540]
+        self.players = [player.Player((100, 60)),
+                        player.Player((100, 120)),
+                        player.Player((100, 180)),
+                        player.Player((100, 240)),
                         player.Player((100, 300)),
-                        player.Player((100, 400)),
-                        player.Player((100, 500))]
+                        player.Player((100, 360)),
+                        player.Player((100, 420)),
+                        player.Player((100, 480)),
+                        player.Player((100, 540))]
         self.target = player.Target(self.target_location)
         self.canvas = tk.Canvas(self.master, width=self.dimensions[0], height=self.dimensions[1])
         self.genetic_evolver = ga.GeneticAlgorithm(self.players)
@@ -35,8 +40,8 @@ class Game:
         """
         Starts animating
         """
-        for pl in self.players:
-            pl.draw(self.canvas)
+        for plr in self.players:
+            plr.draw(self.canvas)
         self.target.draw(self.canvas)
         self.shoot()
         tk.mainloop()
@@ -46,21 +51,30 @@ class Game:
         Takes care of shooting animation
         """
         results = self.genetic_evolver.get_results(self.target_location)
-        print(results)
-        for i, pl in enumerate(self.players):
-            if not pl.arrow_stopped:
-                pl.shoot(self.canvas, [results[i][0], results[i][1]], results[i][2])
+        for i, plr in enumerate(self.players):
+            if not plr.arrow_stopped:
+                plr.shoot(self.canvas, [results[i][0], results[i][1]], results[i][2])
         self.detect_hit()
-        self.reset()
-        self.master.after(4, self.shoot)
+        self.finish_epoch()
+        self.master.after(2, self.shoot)
 
-    def reset(self):
+    def finish_epoch(self):
         """
         Resets all player's arrows
         """
         if not [plr for plr in self.players if not plr.arrow_stopped]:
+            self.next_generation()
+            self.canvas.delete("all")
             for plr in self.players:
                 plr.reset()
+                plr.draw(self.canvas)
+            self.target.draw(self.canvas)
+
+    def next_generation(self):
+        """
+        Evolve the next generation
+        """
+        self.genetic_evolver.evolve(self.target_location)
 
     def detect_hit(self):
         """
@@ -83,6 +97,7 @@ class Game:
                         self.target_location[0] + random.randint(-40, 40),
                         self.target_location[1] + random.randint(-60, -10),
                         text="HEADSHOT!"))
+                    self.master.after(2000, self.remove_hit_announce)
                     pl.stop_arrow()
 
     def is_out_of_field(self, arrow_coords):

@@ -21,17 +21,17 @@ class NeuralNetwork:
             for _ in range(layer_pattern[i]):
                 rand_weights = []
                 for _ in range(layer_pattern[i-1]):
-                    rand_weights.append(random.uniform(0, 1))
+                    rand_weights.append(random.uniform(-1, 1))
                 self.layers[-1]['neurons'].append(units.Neuron(rand_weights))
-                self.layers[-2]['bias'].append(random.uniform(0, 1))
+                self.layers[-2]['bias'].append(random.uniform(-1, 1))
 
         self.layers.append({'neurons': []})
         for i in range(layer_pattern[-1]):
             rand_weights = []
             for _ in range(layer_pattern[-2]):
-                rand_weights.append(random.uniform(0, 1))
+                rand_weights.append(random.uniform(-1, 1))
             self.layers[-1]['neurons'].append(units.Neuron(rand_weights))
-            self.layers[-2]['bias'].append(random.uniform(0, 1))
+            self.layers[-2]['bias'].append(random.uniform(-1, 1))
 
     def feed_forward(self, inputs, activation):
         """
@@ -48,3 +48,28 @@ class NeuralNetwork:
                     activation, self.layers[i-1]['bias'][j])
 
         return [neuron.get_value() for neuron in self.layers[-1]['neurons']]
+
+    def get_neuron(self, layer, index):
+        """
+        Returns [layer, index] neuron
+        """
+        return self.layers[layer]['neurons'][index]
+
+    def get_layer(self, layer):
+        """
+        Returns layer
+        """
+        return self.layers[layer]['neurons']
+
+    def set_neuron(self, layer, index, neuron):
+        """
+        Returns [layer, index] neuron
+        """
+        self.layers[layer]['neurons'][index] = neuron
+
+    def set_layer(self, layer):
+        """
+        Returns layer
+        """
+        self.layers[layer]['neurons'] = layer
+
