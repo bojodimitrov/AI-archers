@@ -65,11 +65,28 @@ class NeuralNetwork:
         """
         Returns [layer, index] neuron
         """
-        self.layers[layer]['neurons'][index] = neuron
+        self.layers[layer]['neurons'][index] = units.Neuron(neuron.get_weights())
 
-    def set_layer(self, layer):
+    def set_layer(self, index, layer):
         """
         Returns layer
         """
-        self.layers[layer]['neurons'] = layer
+        self.layers[index]['neurons'] = [units.Neuron(neuron.get_weights()) for neuron in layer]
 
+    def set_input_layer(self, layer):
+        """
+        Sets input layer
+        """
+        self.layers[0]['neurons'] = [units.InputNeuron(0) for neuron in layer]
+
+    def mutate(self, probability, operations):
+        """
+        Changes random weight on [layer][neuron] indexes
+        """
+        for i in range(1, self.depth):
+            for neuron in self.layers[i]['neurons']:
+                weights = neuron.get_weights()
+                for k, weight in enumerate(weights):
+                    if random.uniform(0, 1) < probability:
+                        rand_operation = random.randint(0, len(operations) - 1)
+                        weights[k] = operations[rand_operation](weights[k])

@@ -46,6 +46,6 @@ def PReLU(value):
     Parametric rectifier
     """
     if value < 0:
-        return 0.1 * value
+        return 0.2 * value
     else:
         return 0.2 * value

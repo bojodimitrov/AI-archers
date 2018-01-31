@@ -13,22 +13,24 @@ class Game:
     """
     def __init__(self):
         self.master = tk.Tk()
+        self.epochs = 0
         self.dimensions = [800, 600]
         self.hits = []
         self.target_location = [700, 300]
-        self.y_positions = [60, 120, 180, 240, 300, 360, 420, 480, 540]
-        self.players = [player.Player((100, 60)),
-                        player.Player((100, 120)),
-                        player.Player((100, 180)),
+        self.players = [player.Player((100, 200)),
+                        player.Player((100, 220)),
                         player.Player((100, 240)),
-                        player.Player((100, 300)),
-                        player.Player((100, 360)),
-                        player.Player((100, 420)),
-                        player.Player((100, 480)),
-                        player.Player((100, 540))]
+                        player.Player((100, 260)),
+                        player.Player((100, 280)),
+                        player.Player((100, 300))
+                        #player.Player((100, 420)),
+                        #player.Player((100, 480)),
+                        #player.Player((100, 540))
+                        ]
         self.target = player.Target(self.target_location)
         self.canvas = tk.Canvas(self.master, width=self.dimensions[0], height=self.dimensions[1])
         self.genetic_evolver = ga.GeneticAlgorithm(self.players)
+        self.epochs_text = None
 
     def init_canvas(self):
         """
@@ -40,6 +42,7 @@ class Game:
         """
         Starts animating
         """
+        self.epochs_text = self.canvas.create_text(30, 30, text="epochs: " + str(self.epochs))
         for plr in self.players:
             plr.draw(self.canvas)
         self.target.draw(self.canvas)
@@ -69,6 +72,13 @@ class Game:
                 plr.reset()
                 plr.draw(self.canvas)
             self.target.draw(self.canvas)
+            self.canvas.delete(self.epochs_text)
+            self.epochs += 1
+            self.epochs_text = self.canvas.create_text(30, 30, text="epochs: " + str(self.epochs))
+            if self.epochs % 100 == 0:
+                target_y = random.randint(100, 500)
+                self.target_location[1] = target_y
+                self.target.player_y = target_y
 
     def next_generation(self):
         """
@@ -91,6 +101,7 @@ class Game:
                         self.target_location[1] + random.randint(-60, -10),
                         text="HIT!"))
                     self.master.after(2000, self.remove_hit_announce)
+                    pl.hit()
                     pl.stop_arrow()
                 if self.headshot(arrow_coords):
                     self.hits.append(self.canvas.create_text(
@@ -98,6 +109,7 @@ class Game:
                         self.target_location[1] + random.randint(-60, -10),
                         text="HEADSHOT!"))
                     self.master.after(2000, self.remove_hit_announce)
+                    pl.headshot()
                     pl.stop_arrow()
 
     def is_out_of_field(self, arrow_coords):

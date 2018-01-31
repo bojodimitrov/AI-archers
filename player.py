@@ -25,6 +25,7 @@ class Player:
         self.arrow = None
         self.arrow_stopped = False
         self.load_sprites()
+        self.hitted = 0
 
     def load_sprites(self):
         """
@@ -38,11 +39,24 @@ class Player:
         arrow_img = arrow_img.rotate(-90)
         self.arrow_img = arrow_img.resize((70, 70), Image.ANTIALIAS)
 
+    def hit(self):
+        """
+        Direct hit
+        """
+        self.hitted = 1
+
+    def headshot(self):
+        """
+        Direct headshot
+        """
+        self.hitted = 2
+
     def reset(self):
         """
         Resets arrow
         """
         self.frames = 0
+        self.hitted = 0
         self.arrow_x = self.player_x+25
         self.arrow_y = self.player_y+8
         self.arrow_stopped = False
