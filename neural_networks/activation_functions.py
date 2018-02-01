@@ -3,6 +3,12 @@ Activation function
 """
 import math
 
+def identity(value):
+    """
+    Identity function
+    """
+    return 0.3 * value
+
 def step_function(value):
     """
     Step function
@@ -46,6 +52,6 @@ def PReLU(value):
     Parametric rectifier
     """
     if value < 0:
-        return 0.2 * value
+        return 0.18 * value
     else:
-        return 0.2 * value
+        return 0.17 * value

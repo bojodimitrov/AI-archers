@@ -12,7 +12,7 @@ class GeneticAlgorithm:
     """
     def __init__(self, population):
         self.population_count = len(population)
-        self.neural_networks_pattern = [2, 4, 3]
+        self.neural_networks_pattern = [3, 5, 5, 3]
         self.free_spaces = []
         self.population = population
         self.offspring_termination_number = 0.4
@@ -20,7 +20,7 @@ class GeneticAlgorithm:
         for individual in self.population:
             individual.set_neural_network(nn.neural_network.NeuralNetwork(self.neural_networks_pattern))
 
-    def get_results(self, target):
+    def get_results(self, target, gravity):
         """
         Makes test calculations of the population
         """
@@ -28,8 +28,9 @@ class GeneticAlgorithm:
         for individual in self.population:
             results.append(individual.get_neural_network().feed_forward(
                 [target[0] - individual.player_x,
-                 target[1] - individual.player_y],
-                nn.f.PReLU))
+                 target[1] - individual.player_y,
+                 gravity],
+                nn.f.identity))
         return results
 
     def fitness_function(self, shot, target, frames, hit):
@@ -39,11 +40,11 @@ class GeneticAlgorithm:
         """
         fintess_values = []
         distance = math.sqrt((target[0] - shot[0]) ** 2 + (target[1] - shot[1]) ** 2)
-        fintess_value = distance + frames
+        fintess_value = distance
         if hit == 1:
             fintess_value /= 2
         if hit == 2:
-            fintess_value /= 4
+            fintess_value /= 8
         fintess_values.append(fintess_value)
         return fintess_values
 
@@ -57,18 +58,20 @@ class GeneticAlgorithm:
                                                                  x.hitted),
                              reverse=True)
         for _ in range(0, to_be_killed):
-            self.free_spaces.append(self.population[0].player_y)
+            self.free_spaces.append([self.population[0].player_x, self.population[0].player_y])
             del self.population[0]
             self.population_count -= 1
 
-    def crossbreed(self):
+    def crossbreed(self, target):
         """
         Crossbreeds archers
         """
-        sequence = [x for x in range(0, self.population_count)]
+        self.population.sort(key=lambda x: x.hitted)
+
+        sequence = [x for x in range(0, 8)]
         random.shuffle(sequence)
         for i in range(0, len(sequence), 2):
-            pl = Player([100, self.free_spaces[0]])
+            pl = Player([self.free_spaces[0][0], self.free_spaces[0][1]])
             del self.free_spaces[0]
             rand_op = random.randint(0, 1)
             if rand_op == 0:
@@ -86,11 +89,13 @@ class GeneticAlgorithm:
         Mutates some of the archers
         """
         for individual in self.population:
-            individual.get_neural_network().mutate(self.mutation_probability,
-                                                   [self.replace_weight,
-                                                    self.scale,
-                                                    self.shift,
-                                                    self.swap_sign])
+            if individual.hitted == 1:
+                individual.get_neural_network().mutate(self.mutation_probability / 2,
+                                                       [self.lesser_shift])
+
+            if individual.hitted == 0:
+                individual.get_neural_network().mutate(self.mutation_probability,
+                                                       [self.shift])
 
     def swap_neuron(self, nn_a, nn_b):
         """
@@ -134,9 +139,9 @@ class GeneticAlgorithm:
 
     def shift(self, weight):
         """
-        Adds random number between -1, 1
+        Adds random number between -0.8, 0.8
         """
-        return weight + random.uniform(-0.6, 0.6)
+        return weight + random.uniform(-0.8, 0.8)
 
     def swap_sign(self, weight):
         """
@@ -144,10 +149,23 @@ class GeneticAlgorithm:
         """
         return weight * (-1)
 
+    def lesser_shift(self, weight):
+        """
+        Narrows the shift
+        """
+        return self.shift(weight) * 0.07
+
+    def lesser_scale(self, weight):
+        """
+        Narrows the scale
+        """
+        return self.scale(weight) * 0.3
+        
+
     def evolve(self, target):
         """
         One evolutionary cycle
         """
         self.selection(target)
-        self.crossbreed()
+        self.crossbreed(target)
         self.mutation()

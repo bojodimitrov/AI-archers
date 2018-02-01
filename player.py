@@ -11,6 +11,7 @@ class Player:
     Archer
     """
     def __init__(self, location):
+        self.hits = 0
         self.arrow_delta = [0, 0]
         self.gravity = [0, 0.2]
         self.frames = 0
@@ -43,12 +44,14 @@ class Player:
         """
         Direct hit
         """
+        self.hits += 1
         self.hitted = 1
 
     def headshot(self):
         """
         Direct headshot
         """
+        self.hits += 1
         self.hitted = 2
 
     def reset(self):
@@ -126,10 +129,12 @@ class Player:
             self.arrow_delta[1] = normalised_direction[1] * power
             self.shooted = True
 
-        self.arrow = ImageTk.PhotoImage(self.arrow_img.rotate(
-            math.degrees(math.atan2(self.arrow_delta[0], self.arrow_delta[1])) - 90))
-        self.arrow_canvas = canvas.create_image(self.arrow_x, self.arrow_y, image=self.arrow)
-
+        #self.arrow = ImageTk.PhotoImage(self.arrow_img.rotate(
+            #math.degrees(math.atan2(self.arrow_delta[0], self.arrow_delta[1])) - 90))
+        #self.arrow_canvas = canvas.create_image(self.arrow_x, self.arrow_y, image=self.arrow)
+        canvas.create_oval(self.arrow_x,  self.arrow_y,
+                           self.arrow_x + 4,  self.arrow_y + 4,
+                           fill="black")
         self.frames += 1
         self.arrow_delta[0] += self.gravity[0]
         self.arrow_delta[1] += self.gravity[1]
