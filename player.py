@@ -13,7 +13,7 @@ class Player:
     def __init__(self, location):
         self.hits = 0
         self.arrow_delta = [0, 0]
-        self.gravity = [0, 0.2]
+        self.closest_to_target = 10000
         self.frames = 0
         self.shooted = False
         self.player_x = location[0]
@@ -21,10 +21,9 @@ class Player:
         self.arrow_x = self.player_x+25
         self.arrow_y = self.player_y+8
         self.size = 3
-        self.neural_network = None
         self.arrow_canvas = None
         self.arrow = None
-        self.arrow_stopped = False
+        self.waiting = False
         self.load_sprites()
         self.hitted = 0
 
@@ -62,14 +61,9 @@ class Player:
         self.hitted = 0
         self.arrow_x = self.player_x+25
         self.arrow_y = self.player_y+8
-        self.arrow_stopped = False
+        self.waiting = False
         self.shooted = False
-
-    def delete_neural_network(self):
-        """
-        Deletes neural network
-        """
-        self.neural_network = None
+        self.closest_to_target = 10000
 
     def get_frames(self):
         """
@@ -81,7 +75,7 @@ class Player:
         """
         Stops arrow
         """
-        self.arrow_stopped = True
+        self.waiting = True
 
     def get_arrow_coordinates(self):
         """
@@ -119,29 +113,45 @@ class Player:
         self.arrow = ImageTk.PhotoImage(self.arrow_img)
         self.arrow_canvas = canvas.create_image(self.arrow_x, self.arrow_y, image=self.arrow)
 
-    def shoot(self, canvas, direction, power):
+    def check_distance(self, target):
+        dist = math.sqrt((target[0] - self.arrow_x) ** 2 + (target[1] - self.arrow_y) ** 2)
+        if dist < self.closest_to_target:
+            self.closest_to_target = dist
+
+    def shoot(self, direction, power):
+        normalised_direction = utils.normalise(direction)
+        self.arrow_delta[0] = normalised_direction[0] * power
+        self.arrow_delta[1] = normalised_direction[1] * power
+        self.shooted = True
+
+    def update_arrow(self, canvas, gravity, rain, wind):
         """
         Shoots arrow in direction of 'towards' (x, y) point with some power
         """
-        if not self.shooted:
-            normalised_direction = utils.normalise(direction)
-            self.arrow_delta[0] = normalised_direction[0] * power
-            self.arrow_delta[1] = normalised_direction[1] * power
-            self.shooted = True
+        if self.waiting:
+            return
 
-        #self.arrow = ImageTk.PhotoImage(self.arrow_img.rotate(
-            #math.degrees(math.atan2(self.arrow_delta[0], self.arrow_delta[1])) - 90))
-        #self.arrow_canvas = canvas.create_image(self.arrow_x, self.arrow_y, image=self.arrow)
-        canvas.create_oval(self.arrow_x,  self.arrow_y,
-                           self.arrow_x + 4,  self.arrow_y + 4,
-                           fill="black")
+        self.arrow = ImageTk.PhotoImage(self.arrow_img.rotate(
+            math.degrees(math.atan2(self.arrow_delta[0], self.arrow_delta[1])) - 90))
+        self.arrow_canvas = canvas.create_image(self.arrow_x, self.arrow_y, image=self.arrow)
+        # canvas.create_oval(self.arrow_x,  self.arrow_y,
+        #                   self.arrow_x + 3,  self.arrow_y + 3,
+        #                   fill="black")
         self.frames += 1
-        self.arrow_delta[0] += self.gravity[0]
-        self.arrow_delta[1] += self.gravity[1]
+        self.arrow_delta[1] += gravity
+        self.arrow_delta[1] += rain
+        self.arrow_delta[0] += wind[0]
+        self.arrow_delta[1] += wind[1]
 
-        self.arrow_x += self.arrow_delta[0]
-        self.arrow_y += self.arrow_delta[1]
+        self.arrow_x += self.arrow_delta[0] 
+        self.arrow_y += self.arrow_delta[1] 
 
+
+class SmartPlayer(Player):
+    def __init__(self, location):
+        Player.__init__(self, location)
+        self.neural_network = None
+    
     def set_neural_network(self, neural_network):
         """
         Assigns neural network to player
@@ -154,6 +164,11 @@ class Player:
         """
         return self.neural_network
 
+    def delete_neural_network(self):
+        """
+        Deletes neural network
+        """
+        self.neural_network = None
 
 class Target(Player):
     """
